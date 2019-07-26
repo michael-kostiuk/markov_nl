@@ -3,7 +3,7 @@ import random
 
 ASCII = 128
 ASCII_CODES = range(ASCII)
-ALL = 0
+ALL = 'ALL'
 
 
 def read_file(fileanme):
@@ -20,15 +20,19 @@ class MarkovModel(object):
         length = len(text)
         text += text[:order]
         for i in range(0, length):
-            self.graph.setdefault(text[i:i+order], [0,] * ASCII)[ord(text[i+order])] += 1
-            self.graph[text[i:i+order]][ALL] += 1
+            kgram = text[i:i+order]
+            symb = text[i+order]
+            self.graph.setdefault(kgram, {}).setdefault(symb, 0)
+            self.graph[kgram][symb] += 1
+            self.graph[kgram].setdefault(ALL, 0)
+            self.graph[kgram][ALL] += 1
 
     def freq_part(self, part):
         return sum(self.graph[part])
 
     def freq(self, part, symb):
         try:
-            return self.graph[part][ord(symb)] / self.graph[part][ALL]
+            return self.graph[part][symb] / self.graph[part][ALL]
         except KeyError:
             return 0
 
@@ -85,6 +89,10 @@ if __name__ == "__main__":
     # pprint.pprint(m.pprint())
     # txt = m.random_text(1000)
     # import pdb; pdb.set_trace()
+    import re
+    # text = read_file('wiki_100k.txt')
+    text = read_file('hltv.txt')
+    import pdb; pdb.set_trace()
+    # m = MarkovModel(text, 4)
 
-    text = read_file('wiki_100k.txt')
-    m = MarkovModel(text, 4)
+    # spellcheck(m)
