@@ -1,16 +1,10 @@
-import random
-import re
 import json
 import time
 
-ASCII = 128
-ASCII_CODES = range(ASCII)
 ALL = 'ALL'
 
+TRAIN_DIR = 'out'
 
-def read_file(fileanme):
-    with open(fileanme) as f:
-        return f.read()
 
 class WordReader(object):
     def __init__(self, file_path, chunk_size=8096):
@@ -35,8 +29,8 @@ class WordReader(object):
         word_completed = False
         chunk = self.chached_chunk
         while not word_completed:
-            if not chunk:
-                raise StopIteration
+            # if not chunk:
+            #     raise StopIteration
             # char = ord(symb)
             for i in range(self.chunk_size):
                 try:
@@ -72,20 +66,17 @@ class MarkovModel(object):
     def __init__(self, orders, filename=None):
         self.graph = {}
         self.orders = orders
-        # self._text = text
-        # length = len(text)
+
         if filename:
             self.feed(filename)
 
     def feed(self, filename):
         with WordReader(filename) as w:
             for word, w_len in w:
-                # w_len = len(word) # faster len?
-                # w_len = match.end() - match.start() # faster len?
                 for order in self.orders:
                     if w_len < order:
                         continue
-                    for i in range(0, len(word) - order):
+                    for i in range(0, w_len - order):
                         kgram = word[i:i+order]
                         symb = word[i+order]
                         self.graph.setdefault(kgram, {}).setdefault(symb, 0)
@@ -102,24 +93,9 @@ class MarkovModel(object):
         except KeyError:
             return 0
 
-    def random_char(self, part):
-        symb_code = random.choices(range(ASCII), self.graph[part])
-        return chr(symb_code[0])
-
-    def random_text(self, length):
-        current = self._text[:self.order]
-        out = [current[:],]
-        for i in range(length):
-            new = self.random_char(current)
-            out.append(new)
-            current = current[1:] + new
-        return ''.join(out)
-
     def pprint(self):
-        out = {}
-        for x in self.graph:
-            out[x] = {chr(l): self.graph[x][l] for l in ASCII_CODES if self.graph[x][l]}
-        return out
+        out = ['%s: %s' % (k, v) for k, v in self.graph.items()]
+        return '\n'.join(out)
 
     def save(self):
         with open(self.dump_filename, 'r') as f1:
@@ -149,25 +125,18 @@ def spellcheck(m):
 
 
 if __name__ == "__main__":
-    import pprint
     import sys
-    from os import listdir
+    from os import listdir, path
 
-
-    docs = listdir('/Users/michael/Documents/projector/markov_nl/out')
+    docs = listdir(TRAIN_DIR)
     file_count = len(docs)
     processed = 0
 
-    m = MarkovModel([3, 4, 7])
+    m = MarkovModel([3, ])
 
     for doc in docs:
-        m.feed('out/%s' % doc)
+        m.feed(path.join(TRAIN_DIR, doc))
         processed += 1
-        sys.stdout.write('\r[%2.2f%%]' % (processed / file_count))
+        sys.stdout.write('\r[%2.2f%%]' % (processed / file_count * 100))
 
-    m.save()
-
-    # m = MarkovModel.from_dump(4)
-
-    # m = MarkovModel([3, 7], 'wiki_100k.txt')
     # m.save()
