@@ -69,29 +69,29 @@ class MarkovModel(object):
 
         return m
 
-    def __init__(self, order, filename=None):
+    def __init__(self, orders, filename=None):
         self.graph = {}
-        self.order = order
+        self.orders = orders
         # self._text = text
         # length = len(text)
         if filename:
             self.feed(filename)
 
     def feed(self, filename):
-        word = ''
         with WordReader(filename) as w:
             for word, w_len in w:
                 # w_len = len(word) # faster len?
                 # w_len = match.end() - match.start() # faster len?
-                if w_len < self.order:
-                    continue
-                for i in range(0, len(word) - self.order):
-                    kgram = word[i:i+self.order]
-                    symb = word[i+self.order]
-                    self.graph.setdefault(kgram, {}).setdefault(symb, 0)
-                    self.graph[kgram][symb] += 1
-                    self.graph[kgram].setdefault(ALL, 0)
-                    self.graph[kgram][ALL] += 1
+                for order in self.orders:
+                    if w_len < order:
+                        continue
+                    for i in range(0, len(word) - order):
+                        kgram = word[i:i+order]
+                        symb = word[i+order]
+                        self.graph.setdefault(kgram, {}).setdefault(symb, 0)
+                        self.graph[kgram][symb] += 1
+                        self.graph[kgram].setdefault(ALL, 0)
+                        self.graph[kgram][ALL] += 1
 
     def freq_part(self, part):
         return sum(self.graph[part])
@@ -122,7 +122,7 @@ class MarkovModel(object):
         return out
 
     def save(self):
-        with open(self.dump_filename, 'r') as f:
+        with open(self.dump_filename, 'r') as f1:
             with open('%s.%s' % (time.time(), self.dump_filename), 'w') as f2:
                 f2.write(f1.read())
 
@@ -153,33 +153,21 @@ if __name__ == "__main__":
     import sys
     from os import listdir
 
-    # text = 'banana'
-    # m = MarkovModel(text, 2)
-    # pprint.pprint(m.pprint())
 
+    docs = listdir('/Users/michael/Documents/projector/markov_nl/out')
+    file_count = len(docs)
+    processed = 0
 
-    # text = 'gagggagaggcgagaaa'
-    # m = MarkovModel(text, 2)
-    # pprint.pprint(m.pprint())
-    # txt = m.random_text(1000)
-    # import pdb; pdb.set_trace()
-    # text = read_file('wiki_100k.txt')
-    # text = read_file('hltv.txt')
-    # docs = listdir('/Users/michael/Documents/projector/markov_nl/out')
-    # file_count = len(docs)
-    # processed = 0
+    m = MarkovModel([3, 4, 7])
 
-    # m = MarkovModel(4)
+    for doc in docs:
+        m.feed('out/%s' % doc)
+        processed += 1
+        sys.stdout.write('\r[%2.2f%%]' % (processed / file_count))
 
-    # for doc in docs:
-    #     m.feed('out/%s' % doc)
-    #     processed += 1
-    #     sys.stdout.write('\r[%2.2f%%]' % (processed / file_count))
-
-    # m.save()
+    m.save()
 
     # m = MarkovModel.from_dump(4)
 
-    # m = MarkovModel(order=[3, 7], 'wiki_100k.txt')
-
-    import pdb; pdb.set_trace()
+    # m = MarkovModel([3, 7], 'wiki_100k.txt')
+    # m.save()
